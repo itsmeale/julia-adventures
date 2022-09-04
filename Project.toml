@@ -1,0 +1,13 @@
+name = "sin5016"
+uuid = "321fede4-b7aa-4a59-914d-008790b60e11"
+authors = ["Ale Farias <0800alefarias@gmail.com> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
