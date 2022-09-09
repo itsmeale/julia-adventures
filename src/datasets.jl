@@ -43,9 +43,9 @@ function toyclassification()
     μ₂ = 10
 
     x₁ = rand(Normal(μ₁, 1), 75, 2)
-    y₁ = ones(size(x₁)[1])
+    y₁ = zeros(size(x₁)[1])
     x₂ = rand(Normal(μ₂, 1), 75, 2)
-    y₂ = zeros(size(x₂)[1])
+    y₂ = ones(size(x₂)[1])
 
     X = vcat(x₁, x₂)
     y⃗ = vcat(y₁, y₂)

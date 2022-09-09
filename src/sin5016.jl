@@ -1,5 +1,12 @@
 module sin5016
 
-# Write your package code here.
+include("linearmodels.jl")
+include("datasets.jl")
+
+using .LinearModels
+using .Datasets
+
+X, y = toyclassification()
+regressionclassifier(X, y)
 
 end

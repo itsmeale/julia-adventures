@@ -1,8 +1,10 @@
 module LinearModels
 
-include("datasets.jl")
+include("metrics.jl")
 
-using .Datasets, Plots
+export regressionclassifier
+
+using .Metrics
 
 function addbias(X)
     hcat(X, ones(size(X)[1]))
@@ -29,16 +31,8 @@ function regressionclassifier(X, y⃗)
     ℋ = addbias(X) * ω⃗
     ŷ = signal(ℋ)
     ω⃗, ŷ
-end
 
-function acc(y, ŷ)
-    n = length(y)
-    tp = 0
-    for (i, j) in zip(y, ŷ)
-        tp += (i == j) ? 1 : 0
-    end
-    tp/n
+    confusionmatrix(y⃗, ŷ)
 end
 
 end
-
