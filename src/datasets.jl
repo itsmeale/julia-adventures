@@ -2,7 +2,7 @@ module Datasets
 
 using DataFrames, CSV, Plots, Distributions
 
-export readiris, readlinear, addbias
+export readiris, readlinear, addbias, toyclassification
 
 
 function preparey(y::Vector)::Matrix
@@ -36,6 +36,21 @@ function readlinear()
     ]
     scatter(x⃗, y⃗)
     return x⃗, y⃗
+end
+
+function toyclassification()
+    μ₁ = 3
+    μ₂ = 10
+
+    x₁ = rand(Normal(μ₁, 1), 75, 2)
+    y₁ = ones(size(x₁)[1])
+    x₂ = rand(Normal(μ₂, 1), 75, 2)
+    y₂ = zeros(size(x₂)[1])
+
+    X = vcat(x₁, x₂)
+    y⃗ = vcat(y₁, y₂)
+
+    X, y⃗
 end
 
 end
