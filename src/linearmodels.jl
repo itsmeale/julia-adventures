@@ -2,7 +2,7 @@ module LinearModels
 
 include("metrics.jl")
 
-export regressionclassifier
+export regressionclassifier, regression
 
 using .Metrics
 
@@ -33,6 +33,8 @@ function regressionclassifier(X, y⃗)
     ω⃗, ŷ
 
     confusionmatrix(y⃗, ŷ)
+
+    ω⃗, ŷ
 end
 
 end

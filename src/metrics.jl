@@ -1,7 +1,7 @@
 module Metrics
 
 
-export acc, precision, recall, specificity, f1, confusionmatrix
+export acc, precision, recall, specificity, f1, classification_report, multiclass_report
 
 
 function acc(y, ŷ)
@@ -56,7 +56,7 @@ function cmmetrics(y, ŷ)
     p, n, tp, tn, fp, fn
 end
 
-function confusionmatrix(y, ŷ)
+function classification_report(y, ŷ)
     p, n, tp, tn, fp, fn = cmmetrics(y, ŷ)
     accuracy = (tp + tn) / (p + n)
     prec = tp / (tp + fp)
@@ -71,14 +71,48 @@ function confusionmatrix(y, ŷ)
     
     println("Confusion Matrix Metrics")
     println("---")
+    println("Instances: $(p + n) ($p positives, $n negatives)")
+    println("True Positive: $tp")
+    println("True Negative: $tn")
+    println("False Positive: $fp")
+    println("False Negative: $fn")
     println("Accuracy: $accuracy")
     println("Precision: $prec")
     println("Recall: $rec")
     println("Specificity: $spec")
     println("F1: $f1")
     println("---")
-    println(cm)
-    
+end
+
+function multiclass_report(Y, Ŷ)
+    k = size(Y)[2]
+    predicted_classes = getclasses(Ŷ)
+    Ŷₛ = signal(Ŷ)
+
+    global_acc = acc(Y, predicted_classes)
+    println("Overall accuracy: $global_acc")
+    for i ∈ 1:k
+        println("\nMetrics for class $i")
+        classification_report(Y[:, i], Ŷₛ[:, i])
+    end
+end
+
+#= Obtem o indice do maior valor de y para cada instancia  =#
+function getclasses(Ŷ)
+    return mapslices(argmax, Ŷ, dims=2)[:]
+end
+
+#= Mapeia a classe mais provavel para 1 e as outras para 0 =#
+function signal(Y)
+    Yc = copy(Y)
+    n, k = size(Yc)
+    classes = getclasses(Yc)
+    for j in 1:k
+        for i in 1:n
+            j == classes[i] ? (Yc[i, j] = 1) : (Yc[i, j] = 0)
+        end
+    end
+    return Yc
 end
 
 end
