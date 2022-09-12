@@ -3,7 +3,7 @@ module RegLog
 
 include("metrics.jl")
 
-using CSV, DataFrames, LinearAlgebra, Plots, .Metrics
+using CSV, DataFrames, LinearAlgebra, Plots, Distributions, .Metrics
 
 export logisticregression
 
@@ -39,35 +39,37 @@ function softmax(𝓢)
     return exp.(𝓢) ./ (sum(exp.(𝓢), dims=2) * ones(1, k))
 end
 
+function bisection()
+
+end
+
 function logisticregression(X, Y)
 
     X, Y = readiris()
+    X = hcat(X, ones(n))
     Yₘ = preparey(Y)
     n, 𝓓 = size(X)  # number of instances and features
     k = size(Yₘ)[2]  # number of classes
 
     # auxiliar functions
     total_error(Y, Ŷ) = -sum(Y .* log.(Ŷ))
-    𝛁g(E, X) = E' * X
 
-    # add bias and create weights vector
-    X = hcat(X, ones(n))
-    𝓦 = rand(k, 𝓓 + 1)
+    # weights vector
+    𝓦 = rand(k, 𝓓)
 
     it = 0
     itmax = 1000
-    η = 1e-3
     ϵ = 1e-3
+    η = 1e-3
     errors = Vector{Float64}()
-    grad_norm = Inf
+    𝛁 = ones(k, 𝓓)
 
-    while (grad_norm > ϵ) & (it < itmax)
-        𝓢 = X * 𝓦'
-        Ŷ = softmax(𝓢)
-        𝛁 = 𝛁g(Ŷ - Yₘ, X)
-        𝓦 -= η * 𝛁
+    while (norm(𝛁) > ϵ) & (it < itmax)
+        # estimating Ŷ and getting the error
+        Ŷ = softmax(X * 𝓦')
+        𝛁 = (Ŷ - Yₘ)' * X
         𝓔 = total_error(Yₘ, Ŷ)
-        grad_norm = norm(𝛁)
+        𝓦 = 𝓦 - η * 𝛁
 
         println("it $it, E=$𝓔")
         push!(errors, 𝓔)
@@ -76,7 +78,14 @@ function logisticregression(X, Y)
 
     # evaluation metrics
     Metrics.multiclass_report(Yₘ, Ŷ)
-    plot(errors)
+    plot(
+        errors,
+        xlabel="it",
+        ylabel="error",
+        title="Error convergence",
+        color=:black,
+        linewidth=.5
+    )
 
     return Ŷ, 𝓦, errors
 end
