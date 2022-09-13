@@ -1,3 +1,4 @@
 /Manifest.toml
 theory/
-notebooks/
+.ipynb_checkpoints/
+venv/

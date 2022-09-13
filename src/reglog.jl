@@ -4,16 +4,11 @@ module RegLog
 include("metrics.jl")
 
 using CSV, DataFrames, LinearAlgebra, Plots, Distributions, .Metrics
+using .Datasets
 
 export logisticregression
 
-#=
-Codifica a variavel alvo multiclasse para um vetor de dimensão
-K onde, K é o número de classes.
 
-Se o conjunto de classes é {1, 2, 3}, uma instância pode ser
-codificada como [1, 0, 0], [0, 1, 0] ou [0, 0, 1].
-=#
 function preparey(y::Vector)::Matrix
     n = size(y)[1]
     Y = zeros(n, 3)
@@ -25,7 +20,6 @@ function preparey(y::Vector)::Matrix
     return Y
 end
 
-#= Le o dataset iris =#
 function readiris()
     path = "data/raw/iris.m"
     df = DataFrame(CSV.File(path, header=false))
@@ -39,20 +33,17 @@ function softmax(𝓢)
     return exp.(𝓢) ./ (sum(exp.(𝓢), dims=2) * ones(1, k))
 end
 
-function bisection()
 
-end
-
-function logisticregression(X, Y)
+function softmaxregression(X, Y)
 
     X, Y = readiris()
-    X = hcat(X, ones(n))
+    X = hcat(X, ones(size(X)[1]))
     Yₘ = preparey(Y)
     n, 𝓓 = size(X)  # number of instances and features
     k = size(Yₘ)[2]  # number of classes
 
     # auxiliar functions
-    total_error(Y, Ŷ) = -sum(Y .* log.(Ŷ))
+    cross_entropy(Yₘ, Ŷ) = -sum(Yₘ .* log.(Ŷ))
 
     # weights vector
     𝓦 = rand(k, 𝓓)
@@ -60,31 +51,46 @@ function logisticregression(X, Y)
     it = 0
     itmax = 1000
     ϵ = 1e-3
-    η = 1e-3
     errors = Vector{Float64}()
     𝛁 = ones(k, 𝓓)
 
     while (norm(𝛁) > ϵ) & (it < itmax)
-        # estimating Ŷ and getting the error
         Ŷ = softmax(X * 𝓦')
         𝛁 = (Ŷ - Yₘ)' * X
-        𝓔 = total_error(Yₘ, Ŷ)
-        𝓦 = 𝓦 - η * 𝛁
+        𝓔 = cross_entropy(Yₘ, Ŷ)
+        
+        αu = rand(Uniform(1e-3, .99))
+        αl = 0
+        αm = (αu + αl) / 2
 
-        println("it $it, E=$𝓔")
+        while αu - αl > 1e-9
+            
+            Wi = 𝓦 - αm * 𝛁  # Dou o passo com a escala do alfa atual que foi chutado
+            Yi = softmax(X * Wi')  # Calculo a matriz com as probabilidades
+            𝛁α = (Yi - Yₘ)' * X  # Obtenho o gradiente de 𝛁f(x + αd)
+            h̄ = 𝛁α[:]' * 𝛁[:]  # Calculo h'(α) = 𝛁f(x + αd)'d
+
+            if (h̄ > 0)
+                αu = αm
+            elseif (h̄ < 0)
+                αl = αm
+            end
+            αm = (αu + αl) / 2
+        end
+        
+        𝓦 = 𝓦 - αm * 𝛁
+        println("it $it, E=$𝓔, α=$αm")
         push!(errors, 𝓔)
         it += 1
     end
 
-    # evaluation metrics
-    Metrics.multiclass_report(Yₘ, Ŷ)
     plot(
         errors,
         xlabel="it",
         ylabel="error",
         title="Error convergence",
         color=:black,
-        linewidth=.5
+        linewidth=2
     )
 
     return Ŷ, 𝓦, errors
