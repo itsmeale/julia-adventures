@@ -1,8 +1,11 @@
 using Revise
 using Plots, LinearAlgebra, Distributions
 
-f(X) = X[1]^2 + X[1]*X[2] + X[2]^2
+f(X) = X[1]^2 + X[1]*X[2] + X[2]^2  
+# x₁² + x₁x₂ + x₂²
+
 𝛁f(X) = [ 2*X[1]+X[2], X[1]+2*X[2] ]
+# [ 2x1 + x2,  x2 + 2x₂ ]
 
 # we want to minimize f(X)
 function minimizev1()

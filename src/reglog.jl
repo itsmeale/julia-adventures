@@ -59,15 +59,16 @@ function softmaxregression(X, Y)
         𝛁 = (Ŷ - Yₘ)' * X
         𝓔 = cross_entropy(Yₘ, Ŷ)
         
-        αu = rand(Uniform(1e-3, .99))
+        # bisection
+        αu = 1e-1
         αl = 0
         αm = (αu + αl) / 2
 
-        while αu - αl > 1e-9
-            
+        while αu - αl > 1e-6
             Wi = 𝓦 - αm * 𝛁  # Dou o passo com a escala do alfa atual que foi chutado
             Yi = softmax(X * Wi')  # Calculo a matriz com as probabilidades
             𝛁α = (Yi - Yₘ)' * X  # Obtenho o gradiente de 𝛁f(x + αd)
+            𝛁
             h̄ = 𝛁α[:]' * 𝛁[:]  # Calculo h'(α) = 𝛁f(x + αd)'d
 
             if (h̄ > 0)
@@ -75,6 +76,7 @@ function softmaxregression(X, Y)
             elseif (h̄ < 0)
                 αl = αm
             end
+
             αm = (αu + αl) / 2
         end
         
