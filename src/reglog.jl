@@ -4,9 +4,8 @@ module RegLog
 include("metrics.jl")
 
 using CSV, DataFrames, LinearAlgebra, Plots, Distributions, .Metrics
-using .Datasets
 
-export logisticregression
+export preparey, readiris, softmax, ĥ, h, bisection, softmaxregression
 
 
 function preparey(y::Vector)::Matrix
@@ -20,8 +19,7 @@ function preparey(y::Vector)::Matrix
     return Y
 end
 
-function readiris()
-    path = "data/raw/iris.m"
+function readiris(path)
     df = DataFrame(CSV.File(path, header=false))
     X = Matrix(df[:, 1:4])
     Y = Vector(df[:, 5])
@@ -33,69 +31,87 @@ function softmax(𝓢)
     return exp.(𝓢) ./ (sum(exp.(𝓢), dims=2) * ones(1, k))
 end
 
+function ĥ(α, 𝓦, 𝛁, X, Yₘ)
+    W = 𝓦 + α * (-𝛁)
+    Y = softmax(X * W')
+    𝛁α = (Y - Yₘ)' * X
+    𝛁α[:]' * -𝛁[:]
+end
 
-function softmaxregression(X, Y)
+function h(α, 𝓦, 𝛁, X, Yₘ)
+    W = 𝓦 - α * 𝛁
+    Y = softmax(X * W')
+    -sum(Yₘ .* log.(Y))
+end
 
-    X, Y = readiris()
+function bisection(𝓦, 𝛁, X, Yₘ)
+    αl = 0
+    αu = let
+        α = rand()
+        while ĥ(α, 𝓦, 𝛁, X, Yₘ) < 0
+            α = rand()
+        end
+        α
+    end
+    ᾱ = (αl + αu) / 2
+
+    hl = ĥ(ᾱ, 𝓦, 𝛁, X, Yₘ)
+
+    while abs(hl) > 1e-5
+        if hl > 0
+            αu = ᾱ
+        elseif hl < 0
+            αl = ᾱ
+        end
+        ᾱ = (αl + αu) / 2
+        hl = ĥ(ᾱ, 𝓦, 𝛁, X, Yₘ)
+    end
+
+    ᾱ
+end
+
+function softmaxregression()
+
+    X, Y = readiris("data/raw/iris.m")
     X = hcat(X, ones(size(X)[1]))
     Yₘ = preparey(Y)
     n, 𝓓 = size(X)  # number of instances and features
     k = size(Yₘ)[2]  # number of classes
 
-    # auxiliar functions
-    cross_entropy(Yₘ, Ŷ) = -sum(Yₘ .* log.(Ŷ))
-
     # weights vector
-    𝓦 = rand(k, 𝓓)
+    θ = rand(k, 𝓓)
 
     it = 0
     itmax = 1000
-    ϵ = 1e-3
+    ϵ = 2e-2
     errors = Vector{Float64}()
     𝛁 = ones(k, 𝓓)
+    norm_𝛁 = norm(𝛁)
 
-    while (norm(𝛁) > ϵ) & (it < itmax)
-        Ŷ = softmax(X * 𝓦')
+    while (norm_𝛁 > ϵ) & (it < itmax)
+        Ŷ = softmax(X * θ')
         𝛁 = (Ŷ - Yₘ)' * X
-        𝓔 = cross_entropy(Yₘ, Ŷ)
-        
-        # bisection
-        αu = 1e-1
-        αl = 0
-        αm = (αu + αl) / 2
+        𝛁ₙ = 𝛁/norm(𝛁)
+        𝓔 = -sum(Yₘ .* log.(Ŷ))
+        η = bisection(θ, 𝛁ₙ, X, Yₘ)
+        θ = θ - η * 𝛁ₙ
 
-        while αu - αl > 1e-6
-            Wi = 𝓦 - αm * 𝛁  # Dou o passo com a escala do alfa atual que foi chutado
-            Yi = softmax(X * Wi')  # Calculo a matriz com as probabilidades
-            𝛁α = (Yi - Yₘ)' * X  # Obtenho o gradiente de 𝛁f(x + αd)
-            𝛁
-            h̄ = 𝛁α[:]' * 𝛁[:]  # Calculo h'(α) = 𝛁f(x + αd)'d
-
-            if (h̄ > 0)
-                αu = αm
-            elseif (h̄ < 0)
-                αl = αm
-            end
-
-            αm = (αu + αl) / 2
-        end
-        
-        𝓦 = 𝓦 - αm * 𝛁
-        println("it $it, E=$𝓔, α=$αm")
+        norm_∇ = norm(𝛁)
+        println("it $it, E=$𝓔, α=$η, norm(𝛁)=$norm_∇")
         push!(errors, 𝓔)
         it += 1
     end
 
-    plot(
+    plot!(
         errors,
         xlabel="it",
         ylabel="error",
         title="Error convergence",
-        color=:black,
-        linewidth=2
+        color=:blue,
+        linewidth=3
     )
 
-    return Ŷ, 𝓦, errors
+    return Ŷ, 𝓦, errors 
 end
 
 
