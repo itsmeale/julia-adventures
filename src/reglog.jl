@@ -84,7 +84,7 @@ function softmaxregression()
     it = 0
     itmax = 1000
     ϵ = 2e-2
-    errors = Vector{Float64}()
+    loss_values = Vector{Float64}()
     𝛁 = ones(k, 𝓓)
     norm_𝛁 = norm(𝛁)
 
@@ -92,27 +92,17 @@ function softmaxregression()
         Ŷ = softmax(X * θ')
         𝛁 = (Ŷ - Yₘ)' * X
         𝛁ₙ = 𝛁/norm(𝛁)
-        𝓔 = -sum(Yₘ .* log.(Ŷ))
+        loss = -sum(Yₘ .* log.(Ŷ))
         η = bisection(θ, 𝛁ₙ, X, Yₘ)
         θ = θ - η * 𝛁ₙ
 
         norm_∇ = norm(𝛁)
-        println("it $it, E=$𝓔, α=$η, norm(𝛁)=$norm_∇")
-        push!(errors, 𝓔)
+        println("it $it, E=$loss, α=$η, norm(𝛁)=$norm_∇")
+        push!(loss_values, loss)
         it += 1
     end
 
-    plot!(
-        errors,
-        xlabel="it",
-        ylabel="error",
-        title="Error convergence",
-        color=:blue,
-        linewidth=3
-    )
-
-    return Ŷ, 𝓦, errors 
+    return θ, loss_values 
 end
-
 
 end
