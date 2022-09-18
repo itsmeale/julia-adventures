@@ -28,6 +28,8 @@ end
 
 function softmax(𝓢)
     k = size(𝓢)[2]
+    # estabiliza a softmax para evitar overflow
+    𝓢 = 𝓢 .- findmax(𝓢, dims=2)[1]
     return exp.(𝓢) ./ (sum(exp.(𝓢), dims=2) * ones(1, k))
 end
 
@@ -49,7 +51,7 @@ function bisection(𝓦, 𝛁, X, Yₘ)
     αu = let
         α = rand()
         while ĥ(α, 𝓦, 𝛁, X, Yₘ) < 0
-            α = rand()
+            α *= 2
         end
         α
     end
@@ -57,7 +59,7 @@ function bisection(𝓦, 𝛁, X, Yₘ)
 
     hl = ĥ(ᾱ, 𝓦, 𝛁, X, Yₘ)
 
-    while abs(hl) > 1e-5
+    while (abs(hl) > 1e-5)
         if hl > 0
             αu = ᾱ
         elseif hl < 0
@@ -82,22 +84,17 @@ function softmaxregression()
     θ = rand(k, 𝓓)
 
     it = 0
-    itmax = 1000
+    itmax = 2000
     ϵ = 2e-2
     loss_values = Vector{Float64}()
     𝛁 = ones(k, 𝓓)
-    norm_𝛁 = norm(𝛁)
 
-    while (norm_𝛁 > ϵ) & (it < itmax)
+    while (norm(𝛁) > ϵ) & (it < itmax)
         Ŷ = softmax(X * θ')
         𝛁 = (Ŷ - Yₘ)' * X
-        𝛁ₙ = 𝛁/norm(𝛁)
         loss = -sum(Yₘ .* log.(Ŷ))
-        η = bisection(θ, 𝛁ₙ, X, Yₘ)
-        θ = θ - η * 𝛁ₙ
-
-        norm_∇ = norm(𝛁)
-        println("it $it, E=$loss, α=$η, norm(𝛁)=$norm_∇")
+        η = bisection(θ, 𝛁, X, Yₘ)
+        θ = θ - η * 𝛁
         push!(loss_values, loss)
         it += 1
     end
