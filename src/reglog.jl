@@ -67,20 +67,15 @@ function bisection(𝓦, 𝛁, X, Yₘ)
     ᾱ
 end
 
+function ⊗(A::Matrix, B::Matrix)::Matrix
+    return kron(A, B)
+end
+
 function hessian(X, Ŷ)
     𝓘 = Matrix(I, k, k)
     Ymul = Ŷ'*Ŷ
     𝓗 = (𝓘 - Ymul) ⊗ (X'*X)
 end
-
-
-#=
-    Implement a tensor product, also know as Kronecker product
-=#
-function ⊗(A::Matrix, B::Matrix)::Matrix
-    return kron(A, B)
-end
-
 
 function newton_direction(X, Ŷ, 𝛁)
     𝓗 = hessian(X, Ŷ)
@@ -92,7 +87,6 @@ function newton_direction(X, Ŷ, 𝛁)
     𝓗_inv = inv(𝓗)
     reshape(𝓗_inv * (𝛁[:]), (3, 5))
 end
-
 
 function softmaxregression()
     newton_opt = true
@@ -131,7 +125,6 @@ function softmaxregression()
         θ = θ - η * d
 
         push!(loss_values, loss)
-
         println("it: $it, loss: $loss")
         it += 1
     end
