@@ -81,21 +81,33 @@ function ⊗(A::Matrix, B::Matrix)::Matrix
     return kron(A, B)
 end
 
-function hessian_inverse(𝓗)
+
+function newton_direction(X, Ŷ, 𝛁)
+    𝓗 = hessian(X, Ŷ)
     λ, _ = eigen(𝓗)
-    return 𝓗
+    if minimum(λ) < 0
+        # positivate hessian matrix
+        𝓗 = 𝓗 - (Matrix(I, size(𝓗)) .* 1.001*((minimum(λ))))
+    end
+    𝓗_inv = inv(𝓗)
+    reshape(𝓗_inv * (𝛁[:]), (3, 5))
 end
 
 
 function softmaxregression()
+    newton_opt = true
+    use_bissection = true
+
     X, Y = readiris("data/raw/iris.m")
     X = hcat(X, ones(size(X)[1]))
     Yₘ = preparey(Y)
     n, 𝓓 = size(X)  # number of instances and features
     k = size(Yₘ)[2]  # number of classes
+    η = 1e-3  # fixed learning rate
 
     # weights vector
-    θ = rand(k, 𝓓)
+    θg = rand(k, 𝓓) 
+    θ = θg
 
     it = 0
     itmax = 2000
@@ -105,29 +117,26 @@ function softmaxregression()
 
     while (norm(𝛁) > ϵ) & (it < itmax)
         Ŷ = softmax(X * θ')
-        𝛁 = (Ŷ - Yₘ)' * X
+        𝛁 = d = (Ŷ - Yₘ)' * X
         loss = -sum(Yₘ .* log.(Ŷ))
         
-        𝓗 = hessian(X, Ŷ)  # calcular hessiana
-        λ, _ = eigen(𝓗)
-        if minimum(λ) < 0
-            # positivate hessian matrix
-            𝓗 = 𝓗 - (Matrix(I, size(𝓗)) .* 1.001*((minimum(λ))))
+        if newton_opt
+            d = newton_direction(X, Ŷ, 𝛁)
         end
-        𝓗_inv = inv(𝓗)  # inverter hessiana
 
-        d = reshape(𝓗_inv * (𝛁[:]), (3, 5))
-
-        η = bisection(θ, d, X, Yₘ)
+        if use_bissection
+            η = bisection(θ, d, X, Yₘ)
+        end
 
         θ = θ - η * d
+
         push!(loss_values, loss)
 
         println("it: $it, loss: $loss")
         it += 1
     end
 
-    plot(loss_values)
+    plot!(loss_values, label="Multinomial RegLog + bissection + newton", linewidth=3)
 
     return θ, loss_values 
 end
